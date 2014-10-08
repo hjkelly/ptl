@@ -52,8 +52,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-TEMPLATE_CONTEXT_PROCESSORS = tuple()
-
 ROOT_URLCONF = 'ptl.urls'
 
 WSGI_APPLICATION = 'ptl.wsgi.application'
@@ -62,7 +60,7 @@ WSGI_APPLICATION = 'ptl.wsgi.application'
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'
 
 TIME_ZONE = 'UTC'
 

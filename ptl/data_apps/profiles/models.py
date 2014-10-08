@@ -32,3 +32,6 @@ class Profile(TimeStampedModel):
     subscription_confirmed = models.BooleanField(default=False)
 
     objects = ProfileManager()
+
+    def __unicode__(self):
+        return u"Profile for {}".format(user.username)
