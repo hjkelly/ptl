@@ -7,10 +7,10 @@ from .base import *
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  #postgresql_psycopg2',
-        #'HOST': 'pass-the-llama-dev.clmjmz7pusfx.us-west-2.rds.amazonaws.com',
+        'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, os.pardir, 'llama.sqlite3'),
-        #'USER': 'dev',
-        #'PASSWORD': 'harrisonkelly',
+        #'HOST': '',
+        #'USER': '',
+        #'PASSWORD': '',
     }
 }

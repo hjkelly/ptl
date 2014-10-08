@@ -26,14 +26,14 @@ class HomepageTests(CleanTestCase):
         post_resp = self.client.post('/',
                                      {'email': TEST_EMAIL,
                                       'password': 'yay!',
-                                      'phone_number': '9876543210'})
+                                      'phone_number': '9195555555'})
         self.assertEqual(302, post_resp.status_code,
                          msg="Didn't get the status code we expected. "
                              "Response:\n"+post_resp.content)
         # ... and that the DB reflects it.
         u = User.objects.get(username=TEST_EMAIL)
-        self.assertTrue(isinstance(u.profile, models.Model))
-        self.assertTrue(isinstance(u.profile.contact, models.Model))
+        self.assertGreater(u.profile.pk, 0)
+        self.assertGreater(u.profile.contact.pk, 0)
 
         u.delete()
 
@@ -41,8 +41,8 @@ class HomepageTests(CleanTestCase):
         """
         Make sure valid phone numbers and emails go through.
         """
-        for em, pa, ph in (('b@gmail.com', 'password', '234-567-8901'),
-                           ('c@gmail.com', 'passtest', '(345) 678-9012')):
+        for em, pa, ph in (('b@gmail.com', 'password', '919-555-5555'),
+                           ('c@gmail.com', 'passtest', '(919) 555-5556')):
             resp = self.client.post('/',
                                    {'email': em,
                                     'password': pa,
@@ -50,18 +50,18 @@ class HomepageTests(CleanTestCase):
             self.assertEqual(302, resp.status_code,
                              msg="Didn't get the status code we expected. "
                                  "Response:\n"+resp.content)
-        self.assertEqual(3, User.objects.count())
+        self.assertEqual(2, User.objects.count())
 
     def test_bad_registrations(self):
         """
         Make sure bad data is rejected.
         """
-        for em, pa, ph in (#('d@gmail.com', 'shortphone', '4567890'),
-                           ('@invalid.com', 'password', '4567890123'),
-                           ('not_an_email', 'password', '4567890123'),
-                           ('spacez bad@gmail.com', 'password', '4567890123'),
-                           ('', '<-- blank email == bad', '4567890123'),
-                           ('empty_pass@gmail.com', '', '4567890123')):
+        for em, pa, ph in (#('d@gmail.com', 'shortphone', '5555550'),
+                           ('@invalid.com', 'password', '9195555551'),
+                           ('not_an_email', 'password', '9195555552'),
+                           ('spacez bad@gmail.com', 'password', '9195555553'),
+                           ('', '<-- blank email == bad', '9195555554'),
+                           ('empty_pass@gmail.com', '', '9195555555')):
             resp = self.client.post('/',
                                    {'email': em,
                                     'password': pa,
