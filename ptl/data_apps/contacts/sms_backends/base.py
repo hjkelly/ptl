@@ -1,0 +1,4 @@
+
+
+class BaseSMSBackend(object):
+    pass
