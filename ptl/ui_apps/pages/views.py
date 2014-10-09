@@ -15,6 +15,6 @@ class HomepageView(FormView):
         Create a Profile as well as a Contact and User if needed.
         """
         d = form.cleaned_data
-        Profile.objects.create(d['email'], d['password'], d['phone_number'])
+        Profile.objects.create(d['name'], d['email'], d['password'], d['phone_number'])
         return super(HomepageView, self).form_valid(form)
 homepage = HomepageView.as_view()

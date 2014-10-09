@@ -37,9 +37,12 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'ptl.data_apps.contacts',
+    'django_twilio',
+
     'ptl.data_apps.interactions',
     'ptl.data_apps.profiles',
+    'ptl.data_apps.sms',
+    'ptl.ui_apps.pages',
 )
 
 MIDDLEWARE_CLASSES = (
