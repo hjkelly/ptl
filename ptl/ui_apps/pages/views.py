@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate, login
 from django.shortcuts import render
 from django.views.generic import FormView
 
@@ -7,7 +8,7 @@ from .forms import SimpleSignupForm
 
 class HomepageView(FormView):
     form_class = SimpleSignupForm
-    success_url = '/'
+    success_url = '/dashboard/'
     template_name = 'homepage.html'
 
     def form_valid(self, form):
@@ -15,6 +16,13 @@ class HomepageView(FormView):
         Create a Profile as well as a Contact and User if needed.
         """
         d = form.cleaned_data
-        Profile.objects.create(d['name'], d['email'], d['password'], d['phone_number'])
+        # Create the profile.
+        p = Profile.objects.create(d['name'],
+                                   d['email'],
+                                   d['password'],
+                                   d['phone_number'])
+        # Log them in.
+        authed_user = authenticate(username=d['email'], password=d['password'])
+        login(self.request, authed_user)
         return super(HomepageView, self).form_valid(form)
 homepage = HomepageView.as_view()

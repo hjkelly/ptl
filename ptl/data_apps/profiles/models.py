@@ -21,10 +21,9 @@ class ProfileManager(models.Manager):
         c, _ = Contact.objects.get_or_create(phone_number=phone_number)
 
         # Create the user first.
-        u = User.objects.create(username=email,
-                                email=email,
-                                password=password,
-                                is_active=True)
+        u = User.objects.create_user(username=email,
+                                     email=email,
+                                     password=password)
 
         # Now create the profile and return it.
         return super(ProfileManager, self).create(name=name, user=u, contact=c)
@@ -45,7 +44,7 @@ class Profile(TimeStampedModel):
     objects = ProfileManager()
 
     def __unicode__(self):
-        return u"Profile for {}".format(user.username)
+        return u"Profile for {}".format(self.user.username)
 
     def generate_confirmation_code(self):
         """

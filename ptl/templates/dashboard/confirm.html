@@ -1,0 +1,9 @@
+{% if already_confirmed %}
+    <p>You've confirmed your account!</p>
+{% else %}
+    <form method="post" action=".">
+        {{ form }}
+        {% csrf_token %}
+        <p><button type="submit">Confirm!</button></p>
+    </form>
+{% endif %}

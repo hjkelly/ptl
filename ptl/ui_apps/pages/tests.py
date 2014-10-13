@@ -5,6 +5,7 @@ from ...test import CleanTestCase
 
 TEST_PH = settings.TEST_PHONE_NUMBER
 
+
 class HomepageTests(CleanTestCase):
     def test_register(self):
         """
@@ -29,16 +30,21 @@ class HomepageTests(CleanTestCase):
                                      {'name': "Fred",
                                       'email': TEST_EMAIL,
                                       'password': 'yay!',
-                                      'phone_number': TEST_PH})
-        self.assertEqual(302, post_resp.status_code,
+                                      'phone_number': TEST_PH},
+                                     follow=True)
+        self.assertEqual(200, post_resp.status_code,
                          msg="Didn't get the status code we expected. "
                              "Response:\n"+post_resp.content)
+        # Make sure they were only redirected once, not to the login page as well.
+        self.assertEqual(1, len(post_resp.redirect_chain),
+                         msg="We were redirected more than once - possibly to "
+                         "the login instead of directly to the dashboard?")
+        self.assertTrue(post_resp.redirect_chain[0][0].endswith("/dashboard/"))
+
         # ... and that the DB reflects it.
         u = User.objects.get(username=TEST_EMAIL)
         self.assertGreater(u.profile.pk, 0)
         self.assertGreater(u.profile.contact.pk, 0)
-
-        u.delete()
 
     def test_alternative_syntax_registrations(self):
         """
