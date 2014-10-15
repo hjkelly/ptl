@@ -24,10 +24,13 @@ class CleanTestCase(TestCase):
 
 
 class ProfileTestCase(CleanTestCase):
+    def create_profile(self, name, email, passwd):
+        return Profile.objects.create(name, email, passwd,
+                                      settings.TEST_PHONE_NUMBER)
+
     def test_create(self):
         # Create a new profile!
-        p = Profile.objects.create('Fred', 'a@gmail.com', 'testpass',
-                                   settings.TEST_PHONE_NUMBER)
+        p = self.create_profile('Fred', 'a@gmail.com', 'testpass')
 
         # Make sure it's in the DB.
         self.assertTrue(isinstance(p.pk, (int, long)))
@@ -38,7 +41,7 @@ class ProfileTestCase(CleanTestCase):
                             Profile.DEFAULT_CONFIRMATION_CODE)
 
 
-class UnconfirmedProfileTestCase(CleanTestCase):
+class UnconfirmedProfileTestCase(ProfileTestCase):
     """
     Provide a registered but unconfirmed user, and log the test client in.
     """
@@ -60,7 +63,7 @@ class UnconfirmedProfileTestCase(CleanTestCase):
 
 class ConfirmedProfileTestCase(UnconfirmedProfileTestCase):
     def setUp(self):
-        super(UnconfirmedProfileTestCase, self).setUp()
+        super(ConfirmedProfileTestCase, self).setUp()
         # Attach a profile.
         self.profile.confirmed = True
         self.profile.save()

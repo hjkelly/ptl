@@ -56,3 +56,4 @@ target/
 .*.swp
 *.sqlite*
 ptl/settings/local.py
+ptl/settings/production.py

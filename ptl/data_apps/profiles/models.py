@@ -28,6 +28,12 @@ class ProfileManager(models.Manager):
         # Now create the profile and return it.
         return super(ProfileManager, self).create(name=name, user=u, contact=c)
 
+    def confirmed_for_reminders(self):
+        """
+        Which users should receive text message reminders?
+        """
+        return self.get_queryset().filter(confirmed=True)
+
 
 class Profile(TimeStampedModel):
     # Django doesn't see that we're setting confirmation_code in the save(), so
@@ -39,7 +45,7 @@ class Profile(TimeStampedModel):
     contact = models.ForeignKey(Contact, related_name='profile')
     confirmation_code = models.CharField(max_length=5,
                                          default=DEFAULT_CONFIRMATION_CODE)
-    confirmed = models.BooleanField(default=False)
+    confirmed = models.BooleanField(db_index=True, default=False)
 
     objects = ProfileManager()
 
@@ -50,9 +56,11 @@ class Profile(TimeStampedModel):
         """
         Only once, generate a reminder confirmation string.
         """
-        # Be safe about it!
+        # Be safe about it! Don't override an existing code.
         if (not self.confirmation_code or
             self.confirmation_code == self.DEFAULT_CONFIRMATION_CODE):
+
+            # Generate a code between these numbers:
             self.confirmation_code = str(randint(10000, 99999))
 
     def save(self, *args, **kwargs):
@@ -68,16 +76,7 @@ class Profile(TimeStampedModel):
         content = ("This is a confirmation from Pass the Llama! Your code is "
                    "{}. (Sorry if this is a wrong number!)".
                     format(self.confirmation_code))
-        self.contact.send_sms(content)
-
-    def send_reminder(self):
-        """
-        Have twilio send a reminder.
-        """
-        content = ("Hey {}, have a llama! How have things been since your "
-                   "last check-in? Respond with good, bad, or ugly.".
-                   format(self.name))
-        self.contact.send_sms(content)
+        return self.contact.send_sms(content)
 
 
 @receiver(post_save, sender=Profile)

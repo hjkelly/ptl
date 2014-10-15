@@ -1,16 +1,28 @@
 from django.conf import settings
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Sum
 
 from django_twilio.client import twilio_client
 from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
 
 
+class ContactManager(models.Manager):
+    def get_num_messages_sent(self):
+        """
+        How many messages have we sent to all the users here? This will be
+        especially useful for testing.
+        """
+        return (self.get_queryset().
+                aggregate(num=Sum('num_messages_sent'))['num'])
+
+
 class Contact(TimeStampedModel):
     phone_number = PhoneNumberField(db_index=True, unique=True)
     num_messages_sent = models.PositiveIntegerField(default=0)
     last_sid = models.CharField(max_length=34, blank=True, null=True)
+
+    objects = ContactManager()
 
     def __unicode__(self):
         return unicode(self.phone_number)
