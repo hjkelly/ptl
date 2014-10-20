@@ -26,13 +26,14 @@ class ProfileManager(models.Manager):
                                      password=password)
 
         # Now create the profile and return it.
-        return super(ProfileManager, self).create(name=name, user=u, contact=c)
+        return super(ProfileManager, self).create(name=name, user=u,
+                                                  claimed_contact=c)
 
     def confirmed_for_reminders(self):
         """
         Which users should receive text message reminders?
         """
-        return self.get_queryset().filter(confirmed=True)
+        return self.get_queryset().filter(confirmed_contact__isnull=False)
 
 
 class Profile(TimeStampedModel):
@@ -42,10 +43,13 @@ class Profile(TimeStampedModel):
     DEFAULT_CONFIRMATION_CODE = '8143'
     user = models.OneToOneField(User, related_name='profile')
     name = models.CharField(max_length=25)
-    contact = models.ForeignKey(Contact, related_name='profile')
+    claimed_contact = models.ForeignKey(Contact, related_name='profiles_claimed_by')
+    confirmed_contact = models.OneToOneField(Contact,
+                                             related_name='profile',
+                                             blank=True,
+                                             null=True)
     confirmation_code = models.CharField(max_length=5,
                                          default=DEFAULT_CONFIRMATION_CODE)
-    confirmed = models.BooleanField(db_index=True, default=False)
 
     objects = ProfileManager()
 
@@ -73,13 +77,25 @@ class Profile(TimeStampedModel):
         Send the confirmation text on their behalf.
         """
         # Have twilio send the confirmation message.
-        content = ("This is a confirmation from Pass the Llama! Your code is "
-                   "{}. (Sorry if this is a wrong number!)".
-                    format(self.confirmation_code))
-        return self.contact.send_sms(content)
+        body = ("This is a confirmation from Pass the Llama! Your code is "
+                "{}. (Sorry if this is a wrong number!)".
+                 format(self.confirmation_code))
+        return self.claimed_contact.send_sms(body)
+
+    def confirm(self):
+        self.confirmed_contact = self.claimed_contact
+        self.save()
 
 
 @receiver(post_save, sender=Profile)
 def send_confirmation_code_sms(sender, **kwargs):
     if kwargs['created'] == True:
         kwargs['instance'].send_confirmation_code()
+
+
+class Partnership(models.Model):
+    profile = models.ForeignKey(Profile, related_name='partnerships')
+    contact = models.ForeignKey(Contact, related_name='partnerships')
+    name = models.CharField(max_length=25)
+    confirmation_string = models.CharField(max_length=10)
+    confirmed = models.BooleanField(db_index=True, default=False)

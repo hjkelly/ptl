@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 
-from ...models import send_reminders
+from ...utils import send_reminders
 
 
 class Command(BaseCommand):

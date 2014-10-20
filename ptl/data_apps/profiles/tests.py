@@ -24,9 +24,10 @@ class CleanTestCase(TestCase):
 
 
 class ProfileTestCase(CleanTestCase):
-    def create_profile(self, name, email, passwd):
-        return Profile.objects.create(name, email, passwd,
-                                      settings.TEST_PHONE_NUMBER)
+    def create_profile(self, name, email, passwd, phone_number=None):
+        if phone_number is None:
+            phone_number = settings.TEST_PHONE_NUMBER
+        return Profile.objects.create(name, email, passwd, phone_number)
 
     def test_create(self):
         # Create a new profile!
@@ -35,7 +36,7 @@ class ProfileTestCase(CleanTestCase):
         # Make sure it's in the DB.
         self.assertTrue(isinstance(p.pk, (int, long)))
         # Make sure we sent a confirmation message.
-        self.assertTrue(p.contact.last_sid)
+        self.assertTrue(p.claimed_contact.last_sid)
         # Make sure the confirmation code isn't the default.
         self.assertNotEqual(p.confirmation_code,
                             Profile.DEFAULT_CONFIRMATION_CODE)
@@ -64,6 +65,6 @@ class UnconfirmedProfileTestCase(ProfileTestCase):
 class ConfirmedProfileTestCase(UnconfirmedProfileTestCase):
     def setUp(self):
         super(ConfirmedProfileTestCase, self).setUp()
-        # Attach a profile.
-        self.profile.confirmed = True
+        # Confirm on this end.
+        self.profile.confirmed_contact = self.profile.claimed_contact
         self.profile.save()

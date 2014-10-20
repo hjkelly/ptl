@@ -44,7 +44,7 @@ class HomepageTests(CleanTestCase):
         # ... and that the DB reflects it.
         u = User.objects.get(username=TEST_EMAIL)
         self.assertGreater(u.profile.pk, 0)
-        self.assertGreater(u.profile.contact.pk, 0)
+        self.assertGreater(u.profile.claimed_contact.pk, 0)
 
     def test_alternative_syntax_registrations(self):
         """

@@ -5,6 +5,7 @@ from django.db.models import F, Sum
 from django_twilio.client import twilio_client
 from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
+import phonenumbers
 
 
 class ContactManager(models.Manager):
@@ -42,7 +43,7 @@ class Contact(TimeStampedModel):
         self.last_sid = message.sid
         self.save()
 
-    def send_sms(self, content):
+    def send_sms(self, body):
         """
         THE mechanism that sends a message to a user.
 
@@ -51,9 +52,9 @@ class Contact(TimeStampedModel):
         the modified field is probably an accurate reflection.
         """
 
-        # Send the SMS using the provided content.
+        # Send the SMS using the provided body.
         message = twilio_client.messages.create(
-            body=content,
+            body=body,
             to=str(self.phone_number),
             from_=settings.TWILIO_FROM_NUMBER,
         )

@@ -29,9 +29,9 @@ class ConfirmView(UnconfirmedProfileTestCase):
                          format(resp.status_code, resp.content))
 
         # Make sure the data was actually changed.
-        self.assertEqual(
-                True,
-                Profile.objects.get(pk=self.profile.pk).confirmed)
+        actual_profile = Profile.objects.get(pk=self.profile.pk)
+        self.assertEqual(actual_profile.confirmed_contact,
+                         actual_profile.claimed_contact)
 
         # Make sure we don't get another form.
         resp = self.client.get(URL)

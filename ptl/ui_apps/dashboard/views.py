@@ -21,13 +21,12 @@ class ConfirmView(FormView):
 
     def get_context_data(self, *args, **kwargs):
         c = super(ConfirmView, self).get_context_data(*args, **kwargs)
-        c['already_confirmed'] = self.request.user.profile.confirmed
+        c['already_confirmed'] = bool(self.request.user.profile.confirmed_contact)
         return c
 
     def form_valid(self, *args, **kwargs):
         p = self.request.user.profile
-        p.confirmed = True
-        p.save()
+        p.confirm()
         return super(ConfirmView, self).form_valid(*args, **kwargs)
 
     def get_success_url(self):
