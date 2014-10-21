@@ -1,10 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from ...data_apps.sms.models import Contact
-from ...data_apps.profiles.models import Profile
 from .models import Profile
 
 
@@ -26,7 +24,7 @@ class CleanTestCase(TestCase):
 class ProfileTestCase(CleanTestCase):
     def create_profile(self, name, email, passwd, phone_number=None):
         if phone_number is None:
-            phone_number = settings.TEST_PHONE_NUMBER
+            phone_number = settings.TWILIO_FROM_NUMBER
         return Profile.objects.create(name, email, passwd, phone_number)
 
     def test_create(self):
@@ -36,7 +34,7 @@ class ProfileTestCase(CleanTestCase):
         # Make sure it's in the DB.
         self.assertTrue(isinstance(p.pk, (int, long)))
         # Make sure we sent a confirmation message.
-        self.assertTrue(p.claimed_contact.last_sid)
+        self.assertTrue(1, p.claimed_contact.outgoing_smses.count())
         # Make sure the confirmation code isn't the default.
         self.assertNotEqual(p.confirmation_code,
                             Profile.DEFAULT_CONFIRMATION_CODE)
@@ -56,7 +54,7 @@ class UnconfirmedProfileTestCase(ProfileTestCase):
                 self.USERNAME,
                 self.EMAIL,
                 self.PASSWORD,
-                settings.TEST_PHONE_NUMBER)
+                settings.TWILIO_FROM_NUMBER)
         # Log the test client in.
         self.assertTrue(self.client.login(username=self.USERNAME,
                                           password=self.PASSWORD))

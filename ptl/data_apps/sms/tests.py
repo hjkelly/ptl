@@ -1,18 +1,27 @@
+from random import randint
+
 from django.conf import settings
+from django.test.utils import override_settings
 
 from ...test import CleanTestCase
-from .models import Contact
+from . import models
 
 
-class SmsTests(CleanTestCase):
-    def test_send_sms_and_get_sms(self):
-        TEST_BODY = "blah"
+class SMSTests(CleanTestCase):
+    def setUp(self):
+        super(SMSTests, self).setUp()
 
-        # Send it!
-        c = Contact(phone_number=settings.TEST_PHONE_NUMBER)
-        c.send_sms(TEST_BODY)
+    @override_settings(TEST_SENDS_ACTUAL_MESSAGES=True)
+    def test_send_and_receive(self):
+        """Make sure we can send messages from and to our Twilio number."""
+        TEST_BODY = 'testing{}'.format(randint(10000, 99999))
+        contact = models.Contact.objects.create(
+                phone_number=settings.TWILIO_FROM_NUMBER)
 
-        # Hit up the API to make sure it was sent.
-        last_sms = c.get_last_sms()
-        self.assertNotEqual(last_sms, None)
-        self.assertEqual(last_sms.body, TEST_BODY)
+        # Send it and make sure we got an SID from Twilio.
+        outgoing_sms = contact.send_sms(TEST_BODY)
+        self.assertTrue(outgoing_sms.twilio_sid)
+
+        # Collect incoming messages from the API.
+        models.IncomingSMS.objects.fetch_from_twilio()
+        models.IncomingSMS.objects.get(body__contains=TEST_BODY)

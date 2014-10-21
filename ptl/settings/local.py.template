@@ -1,0 +1,21 @@
+import os
+
+from .base import *
+
+# Twilio
+
+TWILIO_ACCOUNT_SID = ''
+TWILIO_AUTH_TOKEN = ''
+# Make sure that if you're using a trial number on Twilio, it's validated so
+# that it can text itself.
+TWILIO_FROM_NUMBER = ''
+
+# Database
+# https://docs.djangoproject.com/en/1.7/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, os.pardir, 'llama.sqlite3'),
+    },
+}

@@ -1,8 +1,6 @@
-from django.conf import settings
 from django.core.management import call_command
-from django.test import TestCase
 
-from ..sms.models import Contact
+from ..sms.models import OutgoingSMS
 from ..profiles.tests import ConfirmedProfileTestCase
 from . import models
 from .utils import route_incoming_sms
@@ -13,7 +11,7 @@ class ReminderTestCase(ConfirmedProfileTestCase):
         """
         Make sure for all circumstances the right number of reminders are sent.
         """
-        get_count = Contact.objects.get_num_messages_sent
+        get_count = OutgoingSMS.objects.count
 
         # Just the one existing user...
         num_before = get_count()

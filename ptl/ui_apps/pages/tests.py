@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 from ...test import CleanTestCase
 
-TEST_PH = settings.TEST_PHONE_NUMBER
+TEST_PH = settings.TWILIO_FROM_NUMBER
 
 
 class HomepageTests(CleanTestCase):
@@ -51,7 +51,7 @@ class HomepageTests(CleanTestCase):
         Make sure valid phone numbers and emails go through.
         """
         # Make sure the test number is ready to go.
-        T = settings.TEST_PHONE_NUMBER[-10:]
+        T = settings.TWILIO_FROM_NUMBER[-10:]
         self.assertEqual(len(T), 10,
                          msg="Your test phone number must be of the format: "
                              "+1AAABBBCCCC (North American +1 followed by a "
