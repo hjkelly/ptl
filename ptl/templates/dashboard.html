@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title_tag %}Your Dashboard{% endblock %}
+{% block h1 %}Your Dashboard{% endblock %}
+
+{% block content %}
+    <form method="post">
+        {{ form }}
+        {% csrf_token %}
+        <p><button type="submit">Confirm!</button></p>
+    </form>
+{% endblock %}
