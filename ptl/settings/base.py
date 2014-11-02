@@ -95,3 +95,6 @@ PHONENUMBER_DEFAULT_REGION = "US"
 # django auth settings
 
 LOGIN_URL = '/dashboard/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_URL = '/dashboard/logout/'
+

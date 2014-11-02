@@ -21,26 +21,61 @@ class UIMixin(object):
         for n in needles:
             self.assertIn(n, haystack)
 
+    def get_last_redirect_destination(self, resp):
+        if getattr(resp, 'redirect_chain', []):
+            try:
+                actual_url = resp.redirect_chain[-1][0]
+            # If they weren't redirected, give them useful info.
+            except IndexError:
+                self.fail("You weren't redirected at all! Got a {} response with "
+                          "this content:\n{}".
+                          format(resp.status_code, resp.content))
+        else:
+            actual_url = resp['Location']
+
+        # Get the path itself, not query params.
+        return urlparse(actual_url).path
+
+    def assertRespStatusIs(self, resp, acceptable_status_codes):
+        """
+        If the status code doesn't match, try to give more info.
+        """
+
+        # Force an int to a tuple!
+        if isinstance(acceptable_status_codes, int):
+            acceptable_status_codes = (acceptable_status_codes,)
+
+        # If the response isn't one of the options...
+        if resp.status_code not in acceptable_status_codes:
+            # If it was a redirect, where to?
+            if resp.status_code in (301, 302):
+                self.fail("Instead of {}, got a redirect to: {}".
+                          format(acceptable_status_codes,
+                                 self.get_last_redirect_destination(resp)))
+            # Otherwise, what was the content?
+            else:
+                self.fail("Instead of {}, got a {} with content:\n{}".
+                          format(acceptable_status_codes,
+                                 resp.status_code,
+                                 resp.content))
+
+    def assertIsRedirect(self, resp):
+        self.assertTrue(
+                resp.redirect_chain or resp.get('Location', False),
+                msg="The response wasn't a redirect, but a {}:\n{}".
+                format(resp.status_code, resp.content))
+
     def assertDestPath(self, resp, url_name):
         """
         This is better than the built in assertRedirects because it's smart
         enough to focus on the path and ignore the query params.
         """
-        # Get the URL they're interested in.
-        expected_path = reverse(url_name)
+        # Make sure we're dealing with a redirect.
+        self.assertIsRedirect(resp)
 
-        try:
-            actual_url = resp.redirect_chain[-1][0]
-        # If they weren't redirected, give them useful info.
-        except IndexError:
-            self.fail("You weren't redirected at all! Got a {} response with "
-                      "this content:\n{}".
-                      format(resp.status_code, resp.content))
-
-        # Get the path itself, not query params.
-        actual_path = urlparse(actual_url).path
-
-        self.assertEqual(expected_path, actual_path)
+        # Make sure the URL they hoped for matches where we landed.
+        self.assertEqual(reverse(url_name),
+                         self.get_last_redirect_destination(resp))
 
 
 class AnonymousUserTestCase(UIMixin, ProfileTestCase):
@@ -51,6 +86,7 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
     REGISTER_DATA = {
         'name': TEST_NAME,
         'email': TEST_EMAIL,
+        'password': TEST_PASSWORD,
         'phone_number': TEST_PHONE,
     }
     LOGIN_DATA = {
@@ -69,15 +105,17 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
                 reverse('homepage'), self.REGISTER_DATA, follow=True)
 
         # Did it send us to the dashboard?
-        self.assertRedirects(resp, reverse('dashboard'))
+        self.assertDestPath(resp, 'confirm')
 
         # Make sure a user was created properly.
-        self.assertTrue(Profile.objects.get(
-                name=self.TEST_NAME, email=self.TEST_EMAIL))
+        self.assertTrue(Profile.objects.get(name=self.TEST_NAME,
+                                            user__username=self.TEST_EMAIL,
+                                            user__email=self.TEST_EMAIL),
+                        msg="The new user wasn't found in the DB.")
 
     def test_cannot_register_without_complete_info(self):
         # Leave out each piece of info, one at a time.
-        for missing_val in ('name', 'email', 'phone_number'):
+        for missing_val in self.REGISTER_DATA.keys():
             # Form incomplete data.
             incomplete_data = self.REGISTER_DATA.copy()
             incomplete_data.pop(missing_val)
@@ -90,7 +128,7 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
 
     def test_can_see_login_form(self):
         resp = self.client.get(reverse('login'))
-        self.assertEqual(200, resp.status_code)
+        self.assertRespStatusIs(resp, 200)
         self.assertNeedlesInHaystack(needles.LOGIN_FORM, resp.content)
 
     def test_can_login(self):
@@ -103,7 +141,7 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
         resp = self.client.post(reverse('login'), self.LOGIN_DATA, follow=True)
 
         # Were we sent to the dashboard?
-        self.assertRedirects(resp, reverse('dashboard'))
+        self.assertDestPath(resp, 'confirm')
 
     def test_cannot_see_dashboard(self):
         # Try to go there.
@@ -117,7 +155,7 @@ class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
         # Try to go there.
         resp = self.client.get(reverse('login'), follow=True)
         # Make sure they were sent to the dashboard page.
-        self.assertRedirects(resp, reverse('dashboard'))
+        self.assertDestPath(resp, 'confirm')
 
     def test_can_log_out(self):
         # Log them out.
@@ -171,10 +209,16 @@ class ConfirmedUserTestCase(UIMixin, ConfirmedProfileTestCase):
         # Try to go there.
         resp = self.client.get(reverse('login'), follow=True)
         # Make sure they were sent to the dashboard page.
-        self.assertRedirects(resp, reverse('dashboard'))
+        self.assertDestPath(resp, 'dashboard')
 
     def test_can_log_out(self):
-        pass
+        # Log them out.
+        resp = self.client.get(reverse('logout'))
+
+        # Make sure they can't get to the dashboard now.
+        resp = self.client.get(reverse('dashboard'), follow=True)
+        # Make sure they were redirected.
+        self.assertDestPath(resp, 'login')
 
     def test_can_see_personal_info(self):
         pass

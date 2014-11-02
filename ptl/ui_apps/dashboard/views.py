@@ -1,6 +1,7 @@
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import login as django_login
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import FormView
@@ -46,3 +47,16 @@ class DashboardView(FormView):
             return HttpResponseRedirect(reverse('confirm'))
         return super(DashboardView, self).dispatch(request, *args, **kwargs)
 dashboard = login_required(DashboardView.as_view())
+
+
+def skippable_login(view):
+    """
+    If they're already logged in, forward them to the dashboard.
+    """
+    def view_wrapper(request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return HttpResponseRedirect(reverse('dashboard'))
+        else:
+            return view(request, *args, **kwargs)
+    return view_wrapper
+login = skippable_login(django_login)
