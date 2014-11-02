@@ -1,3 +1,7 @@
+from urlparse import urlparse
+
+from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from . import needles
@@ -9,7 +13,7 @@ from ..data_apps.profiles.tests import (
 )
 
 
-class NeedlesMixin(object):
+class UIMixin(object):
     def assertNeedlesInHaystack(self, needles, haystack):
         """
         Take an iterable of strings to find in the given haystack string.
@@ -17,20 +21,41 @@ class NeedlesMixin(object):
         for n in needles:
             self.assertIn(n, haystack)
 
+    def assertDestPath(self, resp, url_name):
+        """
+        This is better than the built in assertRedirects because it's smart
+        enough to focus on the path and ignore the query params.
+        """
+        # Get the URL they're interested in.
+        expected_path = reverse(url_name)
 
-class AnonymousUserTestCase(NeedlesMixin, ProfileTestCase):
+        try:
+            actual_url = resp.redirect_chain[-1][0]
+        # If they weren't redirected, give them useful info.
+        except IndexError:
+            self.fail("You weren't redirected at all! Got a {} response with "
+                      "this content:\n{}".
+                      format(resp.status_code, resp.content))
+
+        # Get the path itself, not query params.
+        actual_path = urlparse(actual_url).path
+
+        self.assertEqual(expected_path, actual_path)
+
+
+class AnonymousUserTestCase(UIMixin, ProfileTestCase):
     TEST_NAME = "Fred"
     TEST_EMAIL = "the.test.user@gmail.com"
     TEST_PASSWORD = 'yay!'
     TEST_PHONE = settings.TWILIO_FROM_NUMBER
     REGISTER_DATA = {
-        'name': self.TEST_NAME,
-        'email': self.TEST_EMAIL,
-        'phone_number': self.TEST_PHONE,
+        'name': TEST_NAME,
+        'email': TEST_EMAIL,
+        'phone_number': TEST_PHONE,
     }
     LOGIN_DATA = {
-        'username': self.TEST_EMAIL,
-        'password': self.TEST_PASSWORD,
+        'username': TEST_EMAIL,
+        'password': TEST_PASSWORD,
     }
 
     def test_can_see_registration_form(self):
@@ -43,9 +68,8 @@ class AnonymousUserTestCase(NeedlesMixin, ProfileTestCase):
         resp = self.client.post(
                 reverse('homepage'), self.REGISTER_DATA, follow=True)
 
-        # Did we end up at the dashboard?
-        self.assertTrue(resp.redirect_chain[-1][1].
-                        endswith(reverse('confirm')))
+        # Did it send us to the dashboard?
+        self.assertRedirects(resp, reverse('dashboard'))
 
         # Make sure a user was created properly.
         self.assertTrue(Profile.objects.get(
@@ -53,7 +77,7 @@ class AnonymousUserTestCase(NeedlesMixin, ProfileTestCase):
 
     def test_cannot_register_without_complete_info(self):
         # Leave out each piece of info, one at a time.
-        for missing_val in ('name', 'email', 'password'):
+        for missing_val in ('name', 'email', 'phone_number'):
             # Form incomplete data.
             incomplete_data = self.REGISTER_DATA.copy()
             incomplete_data.pop(missing_val)
@@ -62,7 +86,7 @@ class AnonymousUserTestCase(NeedlesMixin, ProfileTestCase):
             self.assertContains(resp, '<form', status_code=200)
 
         # Make sure no users were created.
-        self.assertEqual(Profile.objects.count())
+        self.assertFalse(Profile.objects.count())
 
     def test_can_see_login_form(self):
         resp = self.client.get(reverse('login'))
@@ -79,25 +103,21 @@ class AnonymousUserTestCase(NeedlesMixin, ProfileTestCase):
         resp = self.client.post(reverse('login'), self.LOGIN_DATA, follow=True)
 
         # Were we sent to the dashboard?
-        self.assertTrue(resp.redirect_chain[0][1].
-                        endswith(reverse('dashboard')))
-        # We'd end up at the confirmation page, but that's not our problem.
+        self.assertRedirects(resp, reverse('dashboard'))
 
     def test_cannot_see_dashboard(self):
         # Try to go there.
         resp = self.client.get(reverse('dashboard'), follow=True)
         # Make sure they were sent to the login page.
-        self.assertTrue(resp.redirect_chain[-1][1].
-                        endswith(reverse('login')))
+        self.assertDestPath(resp, 'login')
 
 
-class UnconfirmedUserTestCase(NeedlesMixin, UnconfirmedProfileTestCase):
+class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
     def test_redirected_from_login(self):
         # Try to go there.
         resp = self.client.get(reverse('login'), follow=True)
         # Make sure they were sent to the dashboard page.
-        self.assertTrue(resp.redirect_chain[-1][1].
-                        endswith(reverse('confirm')))
+        self.assertRedirects(resp, reverse('dashboard'))
 
     def test_can_log_out(self):
         # Log them out.
@@ -106,8 +126,7 @@ class UnconfirmedUserTestCase(NeedlesMixin, UnconfirmedProfileTestCase):
         # Make sure they can't get to the dashboard now.
         resp = self.client.get(reverse('dashboard'), follow=True)
         # Make sure they were redirected.
-        self.assertFalse(resp.redirect_chain[-1][1].
-                        endswith(reverse('login')))
+        self.assertDestPath(resp, 'login')
 
     def test_cannot_see_dashboard(self):
         """
@@ -116,46 +135,43 @@ class UnconfirmedUserTestCase(NeedlesMixin, UnconfirmedProfileTestCase):
         # Try to go there.
         resp = self.client.get(reverse('dashboard'), follow=True)
         # Make sure they were sent to the login page.
-        self.assertTrue(resp.redirect_chain[-1][1].
-                        endswith(reverse('confirm')))
+        self.assertRedirects(resp, reverse('confirm'))
 
     def test_can_see_confirmation_form(self):
-        resp = self.client.get(URL)
+        resp = self.client.get(reverse('confirm'))
         self.assertContains(resp, "<form", status_code=200)
 
     def test_can_confirm(self):
         # Test the correct code, but with superfluous whitespace, and make
         # sure it goes through.
         correct_code = '{} '.format(self.profile.confirmation_code)
-        resp = self.client.post(URL, {'code': correct_code}, follow=True)
+        resp = self.client.post(reverse('confirm'), {'code': correct_code}, follow=True)
 
         # We should end up at the dashboard.
-        self.assertTrue(resp.redirect_chain[-1][1].
-                        endswith(reverse('dashboard')))
+        self.assertRedirects(resp, reverse('dashboard'))
 
         # Make sure the data was actually changed.
-        #updated_profile = Profile.objects.get(pk=self.profile.pk)
-        self.assertEqual(self.profile.confirmed_contact,
-                         self.profile.claimed_contact)
+        updated_profile = Profile.objects.get(pk=self.profile.pk)
+        self.assertEqual(updated_profile.confirmed_contact,
+                         updated_profile.claimed_contact)
 
     def test_cannot_confirm_without_real_code(self):
         # Test a three-digit confirmation, which is shorter than it should
         # ever be (five digits with a four-digit fallback).
-        resp = self.client.post(URL, {'code': '123'})
-        self.assertContains(resp, "<form", status_code=200)
+        resp = self.client.post(reverse('confirm'), {'code': '123'})
+        self.assertEqual(200, resp.status_code)
 
         # Make sure the data did not change.
         #updated_profile = Profile.objects.get(pk=self.profile.pk)
         self.assertEqual(None, self.profile.confirmed_contact)
 
 
-class ConfirmedUserTestCase(NeedlesMixin, ConfirmedProfileTestCase):
+class ConfirmedUserTestCase(UIMixin, ConfirmedProfileTestCase):
     def test_redirected_from_login(self):
         # Try to go there.
         resp = self.client.get(reverse('login'), follow=True)
         # Make sure they were sent to the dashboard page.
-        self.assertTrue(resp.redirect_chain[-1][1].
-                        endswith(reverse('dashboard')))
+        self.assertRedirects(resp, reverse('dashboard'))
 
     def test_can_log_out(self):
         pass

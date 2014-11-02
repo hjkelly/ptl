@@ -86,6 +86,9 @@ class Profile(TimeStampedModel):
         self.confirmed_contact = self.claimed_contact
         self.save()
 
+    def is_confirmed(self):
+        return bool(self.confirmed_contact)
+
 
 @receiver(post_save, sender=Profile)
 def send_confirmation_code_sms(sender, **kwargs):

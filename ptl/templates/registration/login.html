@@ -1,1 +1,12 @@
-NOt ready yet!
+{% extends 'base.html' %}
+
+{% block title_tag %}Dashboard Login{% endblock %}
+{% block h1 %}Dashboard Login{% endblock %}
+
+{% block content %}
+    <form method="post">
+        {{ form }}
+        {% csrf_token %}
+        <p><button type="submit">Log In</button></p>
+    </form>
+{% endblock %}

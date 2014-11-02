@@ -9,8 +9,8 @@ REGISTRATION_FORM = (
     'name="email"',
     'name="password"',
     'name="phone_number"',
-    'name="csrfmiddlewaretoken',
     'type="submit"',
+    "name='csrfmiddlewaretoken'",
 )
 
 LOGIN_FORM = (
@@ -18,6 +18,6 @@ LOGIN_FORM = (
     'method="post"',
     'name="username"',
     'name="password"',
-    'name="csrfmiddlewaretoken',
     'type="submit"',
+    "name='csrfmiddlewaretoken'",
 )

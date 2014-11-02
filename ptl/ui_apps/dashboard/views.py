@@ -1,6 +1,8 @@
 from functools import wraps
 
-from django.contrib.auth.decorators import login_required  #, user_passes_test
+from django.contrib.auth.decorators import login_required
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 from django.views.generic import FormView
 
 from . import forms
@@ -8,7 +10,7 @@ from . import forms
 
 class ConfirmView(FormView):
     form_class = forms.ConfirmForm
-    template_name = 'dashboard/confirm.html'
+    template_name = 'confirm.html'
 
     def get_form(self, form_class):
         """
@@ -30,29 +32,17 @@ class ConfirmView(FormView):
         return super(ConfirmView, self).form_valid(*args, **kwargs)
 
     def get_success_url(self):
-        return self.request.path
+        return reverse('dashboard')
 confirm = login_required(ConfirmView.as_view())
 
-"""
-def confirmation_required(view_func):
-    # If a user hasn't confirmed their phone number, force them to do so.
-    def check_profile_confirmed(request, *args, **kwargs):
-        if request.user.profile.confirmed:
 
-    return login_required(_wrapped_view_func
+class DashboardView(FormView):
+    form_class = forms.DashboardForm
+    template_name = 'dashboard.html'
 
-    actual_decorator = user_passes_test(
-        lambda u: u.profile.confirmed,
-        login_url=login_url,
-        redirect_field_name=redirect_field_name
-    )
-    if function:
-        return login_required(actual_decorator(function)
-    return actual_decorator
-
-
-class ConfirmView(FormView):
-    form_class = forms.ConfirmForm
-    template_name = 'dashboard/confirm.html'
-confirm = login_required(ConfirmView.as_view())
-"""
+    def dispatch(self, request, *args, **kwargs):
+        # Make them confirm their phone number first.
+        if not request.user.profile.is_confirmed():
+            return HttpResponseRedirect(reverse('confirm'))
+        return super(DashboardView, self).dispatch(request, *args, **kwargs)
+dashboard = login_required(DashboardView.as_view())

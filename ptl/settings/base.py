@@ -90,3 +90,8 @@ TEMPLATE_DIRS = (
 # django-phonenumber-field
 
 PHONENUMBER_DEFAULT_REGION = "US"
+
+
+# django auth settings
+
+LOGIN_URL = '/dashboard/login/'

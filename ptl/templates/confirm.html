@@ -1,9 +1,16 @@
-{% if already_confirmed %}
-    <p>You've confirmed your account!</p>
-{% else %}
-    <form method="post" action=".">
-        {{ form }}
-        {% csrf_token %}
-        <p><button type="submit">Confirm!</button></p>
-    </form>
-{% endif %}
+{% extends 'base.html' %}
+
+{% block title_tag %}Confirm Your Account{% endblock %}
+{% block h1 %}Confirm Your Account{% endblock %}
+
+{% block content %}
+    {% if already_confirmed %}
+        <p>You've confirmed your account!</p>
+    {% else %}
+        <form method="post">
+            {{ form }}
+            {% csrf_token %}
+            <p><button type="submit">Confirm!</button></p>
+        </form>
+    {% endif %}
+{% endblock %}

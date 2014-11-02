@@ -2,6 +2,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
 
+from ...data_apps.profiles.models import Profile
+
 
 class ConfirmForm(forms.Form):
     """
@@ -28,3 +30,9 @@ class ConfirmForm(forms.Form):
         if code != self.expected_code:
             raise ValidationError(_("The code you entered doesn't match your account. Try again!"))
         return code
+
+
+class DashboardForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ('name',)
