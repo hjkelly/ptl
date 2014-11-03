@@ -96,8 +96,9 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
 
     def test_can_see_registration_form(self):
         resp = self.client.get(reverse('homepage'))
-        self.assertEqual(200, resp.status_code)
+        self.assertRespStatusIs(resp, 200)
         self.assertNeedlesInHaystack(needles.REGISTRATION_FORM, resp.content)
+        self.assertNeedlesInHaystack(needles.ANONYMOUS_CONTROLS, resp.content)
 
     def test_can_register(self):
         # Submit the form.
@@ -121,7 +122,11 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
             incomplete_data.pop(missing_val)
             # Make sure it goes nowhere.
             resp = self.client.post(reverse('homepage'), incomplete_data)
-            self.assertContains(resp, '<form', status_code=200)
+            self.assertRespStatusIs(resp, 200)
+            self.assertNeedlesInHaystack(needles.REGISTRATION_FORM,
+                                         resp.content)
+            self.assertNeedlesInHaystack(needles.ANONYMOUS_CONTROLS,
+                                         resp.content)
 
         # Make sure no users were created.
         self.assertFalse(Profile.objects.count())
@@ -130,6 +135,7 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
         resp = self.client.get(reverse('login'))
         self.assertRespStatusIs(resp, 200)
         self.assertNeedlesInHaystack(needles.LOGIN_FORM, resp.content)
+        self.assertNeedlesInHaystack(needles.ANONYMOUS_CONTROLS, resp.content)
 
     def test_can_login(self):
         # Create a user real quickly.
@@ -148,6 +154,7 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
         resp = self.client.get(reverse('dashboard'), follow=True)
         # Make sure they were sent to the login page.
         self.assertDestPath(resp, 'login')
+        self.assertNeedlesInHaystack(needles.ANONYMOUS_CONTROLS, resp.content)
 
 
 class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
@@ -160,6 +167,7 @@ class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
     def test_can_log_out(self):
         # Log them out.
         resp = self.client.get(reverse('logout'))
+        self.assertRespStatusIs(resp, 302)
 
         # Make sure they can't get to the dashboard now.
         resp = self.client.get(reverse('dashboard'), follow=True)
@@ -173,11 +181,13 @@ class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
         # Try to go there.
         resp = self.client.get(reverse('dashboard'), follow=True)
         # Make sure they were sent to the login page.
-        self.assertRedirects(resp, reverse('confirm'))
+        self.assertDestPath(resp, 'confirm')
+        self.assertNeedlesInHaystack(needles.UNCONFIRMED_CONTROLS, resp.content)
 
     def test_can_see_confirmation_form(self):
         resp = self.client.get(reverse('confirm'))
-        self.assertContains(resp, "<form", status_code=200)
+        self.assertNeedlesInHaystack(needles.CONFIRMATION_FORM, resp.content)
+        self.assertNeedlesInHaystack(needles.UNCONFIRMED_CONTROLS, resp.content)
 
     def test_can_confirm(self):
         # Test the correct code, but with superfluous whitespace, and make
@@ -186,7 +196,8 @@ class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
         resp = self.client.post(reverse('confirm'), {'code': correct_code}, follow=True)
 
         # We should end up at the dashboard.
-        self.assertRedirects(resp, reverse('dashboard'))
+        self.assertDestPath(resp, 'dashboard')
+        self.assertNeedlesInHaystack(needles.DASHBOARD, resp.content)
 
         # Make sure the data was actually changed.
         updated_profile = Profile.objects.get(pk=self.profile.pk)
@@ -197,7 +208,7 @@ class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
         # Test a three-digit confirmation, which is shorter than it should
         # ever be (five digits with a four-digit fallback).
         resp = self.client.post(reverse('confirm'), {'code': '123'})
-        self.assertEqual(200, resp.status_code)
+        self.assertRespStatusIs(resp, 200)
 
         # Make sure the data did not change.
         #updated_profile = Profile.objects.get(pk=self.profile.pk)
@@ -214,6 +225,7 @@ class ConfirmedUserTestCase(UIMixin, ConfirmedProfileTestCase):
     def test_can_log_out(self):
         # Log them out.
         resp = self.client.get(reverse('logout'))
+        self.assertRespStatusIs(resp, 302)
 
         # Make sure they can't get to the dashboard now.
         resp = self.client.get(reverse('dashboard'), follow=True)

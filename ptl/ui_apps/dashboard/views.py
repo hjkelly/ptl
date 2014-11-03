@@ -1,5 +1,6 @@
 from functools import wraps
 
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import login as django_login
 from django.core.urlresolvers import reverse
@@ -46,6 +47,13 @@ class DashboardView(FormView):
         if not request.user.profile.is_confirmed():
             return HttpResponseRedirect(reverse('confirm'))
         return super(DashboardView, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        c = super(DashboardView, self).get_context_data(**kwargs)
+        c.update({
+            'profile': self.request.user.profile,
+        })
+        return c
 dashboard = login_required(DashboardView.as_view())
 
 
@@ -60,3 +68,12 @@ def skippable_login(view):
             return view(request, *args, **kwargs)
     return view_wrapper
 login = skippable_login(django_login)
+
+
+def logout(request):
+    """
+    Log them out if they're logged in; ALWAYS redirect them to the homepage.
+    """
+    if request.user.is_authenticated():
+        auth_logout(request)
+    return HttpResponseRedirect(reverse('homepage'))

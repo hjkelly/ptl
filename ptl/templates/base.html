@@ -1,3 +1,23 @@
-{% block content %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>{% block title_tag %}{% endblock %}</title>
+    </head>
+    <body>
+        <header>
+            {# TODO: Y U NO WORK!?! #}
+            {% if user.is_authenticated %}
+                {% if user.profile.is_confirmed %}
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                {% endif %}
+                <a href="{% url 'logout' %}">Sign Out</a>
+            {% else %}
+                <a href="{% url 'login' %}">Sign In</a>
+            {% endif %}
+        </header>
 
-{% endblock %}
+        {% block content %}{% endblock %}
+    </body>
+</html>

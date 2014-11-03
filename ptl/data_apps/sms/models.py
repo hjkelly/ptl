@@ -48,17 +48,18 @@ class OutgoingSMS(models.Model):
         """
         Actually send the message, if the circumstances call for it.
         """
-        # If we're testing and should not send all SMSes, skip this part.
-        if ('test' in sys.argv and
-            getattr(settings, 'TEST_SENDS_ACTUAL_MESSAGES', False)):
+        to_phone_number = str(self.contact.phone_number)
+        # If they're testing, short circuit this and make it text us instead.
+        if 'test' in sys.argv:
+            to_phone_number = settings.TWILIO_FROM_NUMBER
 
-            # Send the SMS using the provided body.
-            message = twilio_client.messages.create(
-                body=self.body,
-                to=str(self.contact.phone_number),
-                from_=settings.TWILIO_FROM_NUMBER,
-            )
-            self.twilio_sid = message.sid
+        # Send the SMS using the provided body.
+        message = twilio_client.messages.create(
+            body=self.body,
+            to=to_phone_number,
+            from_=settings.TWILIO_FROM_NUMBER,
+        )
+        self.twilio_sid = message.sid
 
     def save(self, *args, **kwargs):
         # Send the message first, if that's what they want.

@@ -4,9 +4,8 @@
 {% block h1 %}Your Dashboard{% endblock %}
 
 {% block content %}
-    <form method="post">
-        {{ form }}
-        {% csrf_token %}
-        <p><button type="submit">Confirm!</button></p>
-    </form>
+    <h2>Partners for {{ profile.name }}:</h2>
+    {% for p in partners %}
+        {{ p }}
+    {% endfor %}
 {% endblock %}
