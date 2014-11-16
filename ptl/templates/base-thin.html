@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content_area %}
+    <div class="row">
+        <article class="medium-6 medium-centered columns">
+            <h1>{% block h1 %}{% endblock %}</h1>
+            {% block content %}{% endblock %}
+        </article>
+    </div>
+{% endblock %}

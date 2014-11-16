@@ -1,6 +1,18 @@
-{% extends 'base.html' %}
+{% extends 'base-fullwidth.html' %}
 
 {% block content %}
+    <p>
+        Sudo allows a permitted user to execute a command as the superuser or
+        another user, as specified by the security policy.
+    </p>
+    <p>
+        Sudo supports a plugin architecture for security policies and
+        input/out‐put logging. Third parties can develop and distribute their
+        own policy and I/O logging plugins to work seamlessly with the sudo
+        front end. The default security policy is sudoers, which is configured
+        via the file /etc/sudoers, or via LDAP.  See the Plugins section for
+        more information.
+    </p>
     <form action="." method="post">
         <table>
             {{ form.as_table }}
