@@ -1,11 +1,11 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 
-class JsonResponseCreated(HttpResponse):
+class JsonResponseCreated(JsonResponse):
     status_code = 201
 
 
-class JsonResponseUnprocessable(HttpResponse):
+class JsonResponseUnprocessable(JsonResponse):
     status_code = 422
 
 

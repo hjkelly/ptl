@@ -85,7 +85,7 @@ def partner(request, pk=None):
             # Send it back at them.
             return JsonResponseCreated({
                     'pk': partner.pk,
-                    'name': partner.pk,
+                    'name': partner.name,
                     'url': partner.get_absolute_url(),
                     'phone_number': str(partner.contact.phone_number)})
         # Ehhh... errors.

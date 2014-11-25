@@ -1,3 +1,4 @@
+import json
 from urlparse import urlparse
 
 from django.conf import settings
@@ -275,6 +276,15 @@ class ConfirmedUserTestCase(UIMixin, ConfirmedProfileTestCase):
         for p_kwargs in self.PARTNER_KWARGS:
             resp = self.client.post(reverse('dashboard-partner'), p_kwargs)
             self.assertRespStatusIs(resp, 201)
+            # Make sure the response is the JSON we'd expect.
+            resp_data = json.loads(resp.content)
+            self.assertEqual(set(['pk', 'name', 'url', 'phone_number']),
+                             set(resp_data.keys()))
+            self.assertEqual(p_kwargs['name'], resp_data['name'])
+            self.assertEqual(p_kwargs['phone_number'],
+                             resp_data['phone_number'])
+            # The URL should contain the PK.
+            self.assertIn(unicode(resp_data['pk']), resp_data['url'])
 
         # Make sure they were created.
         self.assertEqual(2, self.profile.partnerships.count())

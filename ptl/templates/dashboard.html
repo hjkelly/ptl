@@ -1,5 +1,7 @@
 {% extends 'base-fullwidth.html' %}
 
+{% load staticfiles %}
+
 {% block title_tag %}Your Dashboard{% endblock %}
 {% block h1 %}Your Dashboard{% endblock %}
 
@@ -16,7 +18,7 @@
             <li>
                 {{ p.name }} &mdash;
                 {{ p.contact.phone_number }} &mdash;
-                <a href="{% url 'dashboard-partner' pk=p.pk %}">Remove</a>
+                <a class="remove" href="{% url 'dashboard-partner' pk=p.pk %}">Remove</a>
             </li>
         {% endfor %}
     </ul>
@@ -29,38 +31,7 @@
 
 {% block extra_js %}
     <script>
-        var anotherUrl = "{% url 'dashboard-partner' %}";
-
-        function showOrHideAddAnother() {
-            if ($('.partners li').length >= 3) {
-                $('.another').hide();
-            } else {
-                $('.another').show();
-            }
-        }
-
-        $('.another').submit(function (ev) {
-            // Don't submit. That's not helpful.
-            ev.preventDefault();
-            // Put together the POST data.
-            var elements = $(this).serializeArray();
-            var data = {};
-            for (var i in elements) {
-                data[elements[i].name] = elements[i].value;
-            }
-            $.ajax({
-                type: "POST",
-                url: addAnotherUrl,
-                data: data,
-                success: function (data, textStatus, jqXHR) {
-                    $('.partners').append(
-                        '<li>' +
-                            data.name + ' &mdash; ' +
-                            data.phone_number + ' &mdash; ' +
-                            '<a href="' + data.url + '">Remove</a> &mdash; ' +
-                        '</li>');
-                }
-            });
-        });
+        var addAnotherUrl = "{% url 'dashboard-partner' %}";
     </script>
+    <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}
