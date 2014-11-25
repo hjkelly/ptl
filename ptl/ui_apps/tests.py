@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from . import needles
-from ..data_apps.profiles.models import Profile
+from ..data_apps.profiles.models import Profile, Partnership
 from ..data_apps.profiles.tests import (
     ProfileTestCase,
     ConfirmedProfileTestCase,
@@ -139,9 +139,10 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
 
     def test_can_login(self):
         # Create a user real quickly.
-        self.create_profile(self.TEST_NAME,
-                            self.TEST_EMAIL,
-                            self.TEST_PASSWORD)
+        Profile.objects.create(name=self.TEST_NAME,
+                               email=self.TEST_EMAIL,
+                               password=self.TEST_PASSWORD,
+                               phone_number=settings.TWILIO_FROM_NUMBER)
 
         # Make sure we can log in as that user.
         resp = self.client.post(reverse('login'), self.LOGIN_DATA, follow=True)
@@ -216,6 +217,16 @@ class UnconfirmedUserTestCase(UIMixin, UnconfirmedProfileTestCase):
 
 
 class ConfirmedUserTestCase(UIMixin, ConfirmedProfileTestCase):
+    PARTNER_KWARGS = [
+        {'name': "Jimmy", "phone_number": '+19196499539'},
+        {'name': "Frederik", "phone_number": '+19195555678', 'confirmed': True},
+    ]
+
+    def _create_partners(self):
+        for p_kwargs in self.PARTNER_KWARGS:
+            p_kwargs.update(profile=self.profile)
+            Partnership.objects.create(**p_kwargs)
+        
     def test_redirected_from_login(self):
         # Try to go there.
         resp = self.client.get(reverse('login'), follow=True)
@@ -233,16 +244,62 @@ class ConfirmedUserTestCase(UIMixin, ConfirmedProfileTestCase):
         self.assertDestPath(resp, 'login')
 
     def test_can_see_personal_info(self):
-        pass
+        resp = self.client.get(reverse('dashboard'))
+        self.assertRespStatusIs(resp, 200)
+        self.assertNeedlesInHaystack(
+                (self.profile.name,
+                 self.profile.user.email,
+                 str(self.profile.confirmed_contact.phone_number)),
+                resp.content)
 
     def test_can_change_personal_info(self):
         pass
 
     def test_can_see_partners(self):
-        pass
+        # Create some partners!
+        self._create_partners()
+
+        # Make sure the dashboard shows them... or at least their names.
+        resp = self.client.get(reverse('dashboard'))
+        self.assertRespStatusIs(resp, 200)
+        self.assertEqual(2, len(resp.context['partners']))
+        self.assertNeedlesInHaystack(
+                [p.name for p in self.profile.partnerships.all()],
+                resp.content)
 
     def test_can_add_partners(self):
-        pass
+        # We shouldn't have any to start with.
+        self.assertEqual(0, self.profile.partnerships.count())
+
+        # Create each sample partner.
+        for p_kwargs in self.PARTNER_KWARGS:
+            resp = self.client.post(reverse('dashboard-partner'), p_kwargs)
+            self.assertRespStatusIs(resp, 201)
+
+        # Make sure they were created.
+        self.assertEqual(2, self.profile.partnerships.count())
+        # Make sure they aren't confirmed; the key for one of the requests
+        # should have been ignored.
+        for p in self.profile.partnerships.all():
+            self.assertFalse(p.confirmed)
 
     def test_can_remove_partners(self):
-        pass
+        # Create some partners!
+        self._create_partners()
+
+        # Make sure the dashboard HTML has the 'remove' link for each partner.
+        resp = self.client.get(reverse('dashboard'))
+        self.assertNeedlesInHaystack(
+                [reverse('dashboard-partner', kwargs={'pk': p.pk})
+                 for p in self.profile.partnerships.all()],
+                 resp.content)
+
+        # Make sure that URL works.
+        for p in self.profile.partnerships.all():
+            resp = self.client.delete(reverse('dashboard-partner',
+                                              kwargs={'pk': p.pk}))
+            self.assertRespStatusIs(resp, 204)
+
+        # Make sure we now have zero partners.
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(0, len(resp.context['partners']))

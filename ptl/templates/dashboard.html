@@ -4,8 +4,63 @@
 {% block h1 %}Your Dashboard{% endblock %}
 
 {% block content %}
+    <h2>Personal Info</h2>
+    <ul class="personal">
+        <li>{{ profile.name }}</li>
+        <li>{{ profile.user.email }}</li>
+        <li>{{ profile.confirmed_contact.phone_number }}</li>
+    </ul>
     <h2>Partners for {{ profile.name }}:</h2>
-    {% for p in partners %}
-        {{ p }}
-    {% endfor %}
+    <ul class="partners">
+        {% for p in partners %}
+            <li>
+                {{ p.name }} &mdash;
+                {{ p.contact.phone_number }} &mdash;
+                <a href="{% url 'dashboard-partner' pk=p.pk %}">Remove</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <form class="another">
+        <input type="text" name="name" placeholder="Name" />
+        <input type="tel" name="phone_number" placeholder="Phone Number" />
+        <button>Add</button>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        var anotherUrl = "{% url 'dashboard-partner' %}";
+
+        function showOrHideAddAnother() {
+            if ($('.partners li').length >= 3) {
+                $('.another').hide();
+            } else {
+                $('.another').show();
+            }
+        }
+
+        $('.another').submit(function (ev) {
+            // Don't submit. That's not helpful.
+            ev.preventDefault();
+            // Put together the POST data.
+            var elements = $(this).serializeArray();
+            var data = {};
+            for (var i in elements) {
+                data[elements[i].name] = elements[i].value;
+            }
+            $.ajax({
+                type: "POST",
+                url: addAnotherUrl,
+                data: data,
+                success: function (data, textStatus, jqXHR) {
+                    $('.partners').append(
+                        '<li>' +
+                            data.name + ' &mdash; ' +
+                            data.phone_number + ' &mdash; ' +
+                            '<a href="' + data.url + '">Remove</a> &mdash; ' +
+                        '</li>');
+                }
+            });
+        });
+    </script>
 {% endblock %}

@@ -1,13 +1,18 @@
 from functools import wraps
+import json
 
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import login as django_login
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
+from django.db import IntegrityError
+from django.http import HttpResponseNotAllowed, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.generic import FormView
 
 from . import forms
+from ...data_apps.profiles import models
+from .responses import JsonResponseCreated, JsonResponseUnprocessable, HttpResponseNoContent
 
 
 class ConfirmView(FormView):
@@ -50,11 +55,53 @@ class DashboardView(FormView):
 
     def get_context_data(self, **kwargs):
         c = super(DashboardView, self).get_context_data(**kwargs)
+
+        profile = self.request.user.profile
         c.update({
-            'profile': self.request.user.profile,
+            'profile': profile,
+            'partners': profile.partnerships.all(),
         })
         return c
 dashboard = login_required(DashboardView.as_view())
+
+
+@login_required
+def partner(request, pk=None):
+    if request.method == 'POST':
+        # Load the data into the form.
+        form = forms.CreatePartnerForm(request.POST)
+        # Should we create it?
+        if form.is_valid():
+            # Figure out the profile.
+            profile = models.Profile.objects.get(user=request.user)
+            # Create the thing.
+            try:
+                partner = models.Partnership.objects.create(
+                        profile=profile,
+                        name=form.cleaned_data['name'],
+                        phone_number=str(form.cleaned_data['phone_number']))
+            except IntegrityError:
+                pass
+            # Send it back at them.
+            return JsonResponseCreated({
+                    'pk': partner.pk,
+                    'name': partner.pk,
+                    'url': partner.get_absolute_url(),
+                    'phone_number': str(partner.contact.phone_number)})
+        # Ehhh... errors.
+        else:
+            return JsonResponseUnprocessable({'errors': form.errors})
+    # If they're deleting one...
+    elif request.method == 'DELETE':
+        # ... look it up by PK, and make it so.
+        partner = get_object_or_404(
+                models.Partnership.objects.filter(profile__user=request.user),
+                pk=pk)
+        partner.delete()
+        # Give them a 204 response.
+        return HttpResponseNoContent("")
+    else:
+        return HttpResponseNotAllowed()
 
 
 def skippable_login(view):

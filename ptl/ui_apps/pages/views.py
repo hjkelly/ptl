@@ -17,10 +17,10 @@ class HomepageView(FormView):
         """
         d = form.cleaned_data
         # Create the profile.
-        p = Profile.objects.create(d['name'],
-                                   d['email'],
-                                   d['password'],
-                                   d['phone_number'])
+        p = Profile.objects.create(name=d['name'],
+                                   email=d['email'],
+                                   password=d['password'],
+                                   phone_number=d['phone_number'])
         # Log them in.
         authed_user = authenticate(username=d['email'], password=d['password'])
         login(self.request, authed_user)

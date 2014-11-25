@@ -76,3 +76,6 @@ class IncomingSMSRouterTestCase(ConfirmedProfileTestCase):
         self.assertEqual(None, route_incoming_sms('+15555550000',
                                                   "good - let's hang out."))
         self.assertEqual(0, models.Checkin.objects.count())
+
+    def test_delete_profile_and_partner_preserves_interactions(self):
+        self.skipTest("This still needs to be implemented.")

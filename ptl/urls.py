@@ -4,6 +4,8 @@ from django.contrib import admin
 urlpatterns = patterns('ptl.ui_apps',
     url(r'^$', 'pages.views.homepage', name='homepage'),
     url(r'^dashboard/$', 'dashboard.views.dashboard', name='dashboard'),
+    url(r'^dashboard/partner/$', 'dashboard.views.partner', name='dashboard-partner'),
+    url(r'^dashboard/partner/(?P<pk>\d+)/$', 'dashboard.views.partner', name='dashboard-partner'),
     url(r'^dashboard/login/$', 'dashboard.views.login', name='login'),
     url(r'^dashboard/logout/$', 'dashboard.views.logout', name='logout'),
     url(r'^dashboard/confirm/$', 'dashboard.views.confirm', name='confirm'),
