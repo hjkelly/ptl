@@ -12,6 +12,7 @@ from ..data_apps.profiles.tests import (
     ConfirmedProfileTestCase,
     UnconfirmedProfileTestCase, 
 )
+from ..data_apps.sms.models import OutgoingSMS
 
 
 class UIMixin(object):
@@ -102,6 +103,7 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
         self.assertNeedlesInHaystack(needles.ANONYMOUS_CONTROLS, resp.content)
 
     def test_can_register(self):
+        """Make sure they can register and that a confirmation text is sent."""
         # Submit the form.
         resp = self.client.post(
                 reverse('homepage'), self.REGISTER_DATA, follow=True)
@@ -110,10 +112,23 @@ class AnonymousUserTestCase(UIMixin, ProfileTestCase):
         self.assertDestPath(resp, 'confirm')
 
         # Make sure a user was created properly.
-        self.assertTrue(Profile.objects.get(name=self.TEST_NAME,
-                                            user__username=self.TEST_EMAIL,
-                                            user__email=self.TEST_EMAIL),
-                        msg="The new user wasn't found in the DB.")
+        try:
+            profile = Profile.objects.get(name=self.TEST_NAME,
+                                          user__username=self.TEST_EMAIL,
+                                          user__email=self.TEST_EMAIL)
+        # If we can't find it...
+        except Profile.DoesNotExist:
+            self.fail("The new user wasn't found in the DB.")
+
+        # Make sure we can find the text message, that it was sent to the
+        # right number and has the confirmation number in it.
+        try:
+            OutgoingSMS.objects.get(
+                    contact__phone_number=self.TEST_PHONE,
+                    contact=profile.claimed_contact,
+                    body__contains=profile.confirmation_code)
+        except OutgoingSMS.DoesNotExist:
+            self.fail("No sign of the confirmation text having been sent.")
 
     def test_cannot_register_without_complete_info(self):
         # Leave out each piece of info, one at a time.

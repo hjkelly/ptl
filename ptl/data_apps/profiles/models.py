@@ -103,6 +103,12 @@ class Profile(TimeStampedModel):
                     values_list('contact', flat=True))
 
 
+@receiver(post_save, sender=Profile)
+def send_profile_confirmation_sms(sender, **kwargs):
+    if kwargs['created'] == True:
+        kwargs['instance'].send_confirmation_sms()
+
+
 class PartnershipManager(models.Manager):
     def create(self, **kwargs):
         """
@@ -203,7 +209,7 @@ class Partnership(models.Model):
         return reverse('dashboard-partner', kwargs={'pk': self.pk})
 
 
-@receiver(post_save, sender=(Profile, Partnership))
-def send_confirmation_sms(sender, **kwargs):
+@receiver(post_save, sender=Partnership)
+def send_partnership_confirmation_sms(sender, **kwargs):
     if kwargs['created'] == True:
         kwargs['instance'].send_confirmation_sms()
