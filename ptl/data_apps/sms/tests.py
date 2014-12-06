@@ -3,7 +3,7 @@ from random import randint
 from django.conf import settings
 from django.test.utils import override_settings
 
-from ...test import CleanTestCase
+from ..profiles.tests import CleanTestCase
 from . import models
 
 
